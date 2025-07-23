@@ -52,7 +52,7 @@
       projectId: "dogs-fed",
       storageBucket: "dogs-fed.firebasestorage.app",
       messagingSenderId: "122026065319",
-      appId: "1:122026065319:web:e8bdba2c12c00d9bc50a82",
+      appId: "1:122026319:web:e8bdba2c12c00d9bc50a82",
       measurementId: "G-GBYZLP47GX"
     };
 
@@ -61,35 +61,42 @@
     const db = firebase.database();
 
     const today = new Date().toISOString().split('T')[0]; // e.g. "2025-07-23"
+    const now = new Date();
+    const hour = now.getHours();
+
+    // Determine period: 'morning' before 12pm, else 'night'
+    const period = hour < 12 ? 'morning' : 'night';
+
     const statusEl = document.getElementById("status");
     const boxesEl = document.getElementById("boxes");
 
-    const ref = db.ref("dog_feed/" + today);
+    // Reference to today's feeding status for the period
+    const ref = db.ref(`dog_feed/${today}/${period}`);
 
-    // Listen for DB changes on today's status
-    ref.on("value", (snapshot) => {
-      const fed = snapshot.val();
+    // Listen for status changes
+    ref.on("value", snapshot => {
+      const fedBy = snapshot.val(); // null or 'B' or 'E' or 'A'
 
-      if (fed === true) {
-        // Dogs have been fed
-        statusEl.textContent = "✅ The dogs have been fed today.";
+      if (fedBy) {
+        // Dogs have been fed this period
+        statusEl.textContent = `✅ The dogs have been fed this ${period} by "${fedBy}".`;
         boxesEl.style.display = "none";
       } else {
-        // Dogs NOT fed yet
-        statusEl.textContent = "❌ The dogs have NOT been fed today. Please click a box to mark as fed.";
+        // Not fed yet this period
+        statusEl.textContent = `❌ Have the dogs been fed this ${period}? Please click a box to mark as fed.`;
         boxesEl.style.display = "flex";
       }
     });
 
-    // When any box clicked, mark as fed
-    function markFed() {
-      ref.set(true);
+    // Function to mark fed with button ID (B, E, or A)
+    function markFed(buttonId) {
+      ref.set(buttonId);
     }
 
-    // Attach click listeners to all boxes
-    document.getElementById("boxB").onclick = markFed;
-    document.getElementById("boxE").onclick = markFed;
-    document.getElementById("boxA").onclick = markFed;
+    // Attach click handlers to boxes
+    ['B', 'E', 'A'].forEach(id => {
+      document.getElementById("box" + id).onclick = () => markFed(id);
+    });
   </script>
 </body>
 </html>
