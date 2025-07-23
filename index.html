@@ -10,6 +10,24 @@
       font-family: sans-serif;
       text-align: center;
       margin-top: 50px;
+      position: relative;
+    }
+    #navButton {
+      position: fixed;
+      top: 15px;
+      right: 15px;
+      padding: 8px 16px;
+      font-size: 14px;
+      cursor: pointer;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      transition: background-color 0.3s;
+      z-index: 1000;
+    }
+    #navButton:hover {
+      background-color: #0056b3;
     }
     #boxes {
       display: flex;
@@ -34,7 +52,9 @@
   </style>
 </head>
 <body>
-  <h1>Have the dogs been fed?</h1>
+  <button id="navButton" onclick="location.href='tally.html'">View Tally</button>
+
+  <h1>Dog Feed Status</h1>
   <p id="status">Checking status...</p>
 
   <div id="boxes" style="display:none;">
