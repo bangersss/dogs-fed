@@ -31,6 +31,10 @@
       color: #444;
     }
   </style>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 </head>
 <body>
   <h1>🐶 Dog Feeding Tracker</h1>
@@ -38,18 +42,40 @@
     <input type="checkbox" id="fedCheckbox" />
     Dogs have been fed today
   </label>
-  <div id="status">❌ Dogs have NOT been fed yet today.</div>
+  <div id="status">Loading...</div>
 
   <script>
+    // 🔧 Replace with your actual Firebase config:
+    const firebaseConfig = {
+        apiKey: "AIzaSyDGV8bO2kgM67p_-9-bpZiiKkkJrbIIs4g",
+        authDomain: "dogs-fed.firebaseapp.com",
+        projectId: "dogs-fed",
+        storageBucket: "dogs-fed.firebasestorage.app",
+        messagingSenderId: "122026065319",
+        appId: "1:122026065319:web:e8bdba2c12c00d9bc50a82",
+        measurementId: "G-GBYZLP47GX"
+        };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
     const checkbox = document.getElementById('fedCheckbox');
     const statusText = document.getElementById('status');
+    const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+    const ref = db.ref(`dogFedStatus/${today}`);
 
+    // Live updates from Firebase
+    ref.on('value', snapshot => {
+      const fed = snapshot.val() === true;
+      checkbox.checked = fed;
+      statusText.textContent = fed
+        ? "✅ Dogs have already been fed today."
+        : "❌ Dogs have NOT been fed yet today.";
+    });
+
+    // Update Firebase when checkbox is changed
     checkbox.addEventListener('change', () => {
-      if (checkbox.checked) {
-        statusText.textContent = "✅ Dogs have already been fed today.";
-      } else {
-        statusText.textContent = "❌ Dogs have NOT been fed yet today.";
-      }
+      ref.set(checkbox.checked);
     });
   </script>
 </body>
