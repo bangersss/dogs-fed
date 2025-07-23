@@ -55,7 +55,7 @@
   </style>
 </head>
 <body>
-  <h1>Dog Feed Status</h1>
+  <h1>Have the dogs been fed?</h1>
   <p id="status">Checking status...</p>
 
   <div id="boxes" style="display:none;">
@@ -83,43 +83,60 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    const today = new Date().toISOString().split('T')[0]; // e.g. "2025-07-23"
     const now = new Date();
     const hour = now.getHours();
+    const today = now.toISOString().split('T')[0]; // YYYY-MM-DD
 
-    // Determine period: 'morning' before 12pm, else 'night'
-    const period = hour < 12 ? 'morning' : 'night';
+    // Determine feeding period and time window:
+    // Morning: 5:00 AM <= time < 12:00 PM
+    // Night: 4:00 PM <= time < 12:00 AM
+    let period = null;
+    let feedingAllowed = false;
+
+    if (hour >= 5 && hour < 12) {
+      period = 'morning';
+      feedingAllowed = true;
+    } else if (hour >= 16 && hour < 24) {
+      period = 'night';
+      feedingAllowed = true;
+    }
 
     const statusEl = document.getElementById("status");
     const boxesEl = document.getElementById("boxes");
 
-    // Reference to today's feeding status for the period
-    const ref = db.ref(`dog_feed/${today}/${period}`);
+    if (!feedingAllowed) {
+      // Outside feeding time - show "too early" message
+      statusEl.textContent = "⏰ It's too early to feed the dogs...";
+      boxesEl.style.display = "none";
+    } else {
+      // Allowed feeding time, proceed with Firebase check
+      const ref = db.ref(`dog_feed/${today}/${period}`);
 
-    // Listen for status changes
-    ref.on("value", snapshot => {
-      const fedBy = snapshot.val(); // null or 'B' or 'E' or 'A'
+      ref.on("value", snapshot => {
+        const fedBy = snapshot.val(); // null or 'B' or 'E' or 'A'
 
-      if (fedBy) {
-        // Dogs have been fed this period
-        statusEl.textContent = `✅ The dogs have been fed this ${period} by "${fedBy}".`;
-        boxesEl.style.display = "none";
-      } else {
-        // Not fed yet this period
-        statusEl.textContent = `❌ Have the dogs been fed this ${period}? Please click a box to mark as fed.`;
-        boxesEl.style.display = "flex";
+        if (fedBy) {
+          statusEl.textContent = `✅ The dogs have been fed this ${period} by "${fedBy}".`;
+          boxesEl.style.display = "none";
+        } else {
+          statusEl.textContent = `❌ Have the dogs been fed this ${period}? Please click a box to mark as fed.`;
+          boxesEl.style.display = "flex";
+        }
+      });
+
+      // Mark fed function only works if feedingAllowed is true
+      function markFed(buttonId) {
+        if (!feedingAllowed) {
+          alert("Feeding is not allowed at this time.");
+          return;
+        }
+        ref.set(buttonId);
       }
-    });
 
-    // Function to mark fed with button ID (B, E, or A)
-    function markFed(buttonId) {
-      ref.set(buttonId);
+      ['B', 'E', 'A'].forEach(id => {
+        document.getElementById("box" + id).onclick = () => markFed(id);
+      });
     }
-
-    // Attach click handlers to boxes
-    ['B', 'E', 'A'].forEach(id => {
-      document.getElementById("box" + id).onclick = () => markFed(id);
-    });
   </script>
 </body>
 </html>
