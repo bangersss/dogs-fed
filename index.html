@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dog Feeding Tracker</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      margin-top: 80px;
+      background-color: #fefefe;
+    }
+    h1 {
+      font-size: 2rem;
+    }
+    label {
+      font-size: 1.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    input[type="checkbox"] {
+      transform: scale(1.5);
+    }
+    #status {
+      margin-top: 20px;
+      font-size: 1.2rem;
+      color: #444;
+    }
+  </style>
+</head>
+<body>
+  <h1>🐶 Dog Feeding Tracker</h1>
+  <label>
+    <input type="checkbox" id="fedCheckbox" />
+    Dogs have been fed today
+  </label>
+  <div id="status">❌ Dogs have NOT been fed yet today.</div>
+
+  <script>
+    const checkbox = document.getElementById('fedCheckbox');
+    const statusText = document.getElementById('status');
+
+    checkbox.addEventListener('change', () => {
+      if (checkbox.checked) {
+        statusText.textContent = "✅ Dogs have already been fed today.";
+      } else {
+        statusText.textContent = "❌ Dogs have NOT been fed yet today.";
+      }
+    });
+  </script>
+</body>
+</html>
