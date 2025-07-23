@@ -1,70 +1,23 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Dog Feed Tally (Last 14 Days)</title>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body {
-      font-family: sans-serif;
-      padding: 30px 20px 80px;
-      max-width: 400px;
-      margin: auto;
-      text-align: center;
-      position: relative;
-    }
-    #navButton {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      padding: 12px 30px;
-      font-size: 16px;
-      cursor: pointer;
-      background-color: #4a90e2;
-      color: white;
-      border: none;
-      border-radius: 25px;
-      box-shadow: 0 4px 8px rgba(74, 144, 226, 0.4);
-      transition: background-color 0.3s, box-shadow 0.3s;
-      z-index: 1000;
-    }
-    #navButton:hover {
-      background-color: #357ABD;
-      box-shadow: 0 6px 12px rgba(53, 122, 189, 0.6);
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-    }
-    th, td {
-      border: 1px solid #444;
-      padding: 10px;
-      font-size: 18px;
-    }
-    th {
-      background-color: #eee;
-    }
-  </style>
-</head>
 <body>
   <h1>Score (Last 14 days)</h1>
 
-  <table>
-    <thead>
-      <tr>
-        <th>Person</th>
-        <th>Points</th>
-      </tr>
-    </thead>
-    <tbody id="tallyBody">
-      <tr><td>Ben</td><td id="countB">0</td></tr>
-      <tr><td>Enya</td><td id="countE">0</td></tr>
-      <tr><td>Alicia</td><td id="countA">0</td></tr>
-    </tbody>
-  </table>
+  <div id="loading">Loading...</div>
+
+  <div id="tallyContainer" style="display: none;">
+    <table>
+      <thead>
+        <tr>
+          <th>Person</th>
+          <th>Points</th>
+        </tr>
+      </thead>
+      <tbody id="tallyBody">
+        <tr><td>Ben</td><td id="countB">0</td></tr>
+        <tr><td>Enya</td><td id="countE">0</td></tr>
+        <tr><td>Alicia</td><td id="countA">0</td></tr>
+      </tbody>
+    </table>
+  </div>
 
   <button
     id="navButton"
@@ -74,9 +27,8 @@
     Back
   </button>
 
-
   <script>
-    // Your Firebase config (same as before)
+    // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyDGV8bO2kgM67p_-9-bpZiiKkkJrbIIs4g",
       authDomain: "dogs-fed.firebaseapp.com",
@@ -92,21 +44,14 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Get today's date
     const today = new Date();
-
-    // Prepare counters
     const counts = { B: 0, E: 0, A: 0 };
+    const daysToCheck = 14;
 
-    // Helper: Format date as YYYY-MM-DD
     function formatDate(date) {
       return date.toISOString().split('T')[0];
     }
 
-    // We'll query 14 days, including today
-    const daysToCheck = 14;
-
-    // Promise to fetch data for a single day and tally it
     function fetchDayData(dateStr) {
       return db.ref('dog_feed/' + dateStr).get().then(snapshot => {
         const dayData = snapshot.val();
@@ -123,7 +68,6 @@
       });
     }
 
-    // Fetch all days, then update the table
     async function fetchAllData() {
       for (let i = 0; i < daysToCheck; i++) {
         const date = new Date(today);
@@ -131,12 +75,16 @@
         const dateStr = formatDate(date);
         await fetchDayData(dateStr);
       }
+
       document.getElementById('countB').textContent = counts.B;
       document.getElementById('countE').textContent = counts.E;
       document.getElementById('countA').textContent = counts.A;
+
+      // Show table, hide loader
+      document.getElementById('tallyContainer').style.display = 'block';
+      document.getElementById('loading').style.display = 'none';
     }
 
     fetchAllData();
   </script>
 </body>
-</html>
