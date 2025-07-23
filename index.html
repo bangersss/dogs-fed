@@ -1,82 +1,68 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
   <title>Dog Feeding Tracker</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      text-align: center;
-      margin-top: 80px;
-      background-color: #fefefe;
-    }
-    h1 {
-      font-size: 2rem;
-    }
-    label {
-      font-size: 1.2rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      margin-top: 20px;
-    }
-    input[type="checkbox"] {
-      transform: scale(1.5);
-    }
-    #status {
-      margin-top: 20px;
-      font-size: 1.2rem;
-      color: #444;
-    }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDGV8bO2kgM67p_-9-bpZiiKkkJrbIIs4g",
+      authDomain: "dogs-fed.firebaseapp.com",
+      databaseURL: "https://dogs-fed-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "dogs-fed",
+      storageBucket: "dogs-fed.firebasestorage.app",
+      messagingSenderId: "122026065319",
+      appId: "1:122026065319:web:e8bdba2c12c00d9bc50a82",
+      measurementId: "G-GBYZLP47GX"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    const db = getDatabase(app);
+
+    const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+    const fedRef = ref(db, 'dogFed/' + today);
+
+    // Update checkbox based on database
+    onValue(fedRef, (snapshot) => {
+      const fed = snapshot.val();
+      document.getElementById("fedCheckbox").checked = !!fed;
+    });
+
+    // When checkbox is clicked
+    window.toggleFed = function () {
+      const isChecked = document.getElementById("fedCheckbox").checked;
+      set(fedRef, isChecked);
+    };
+  </script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 100px;
+    }
+
+    .checkbox-label {
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+
+    input[type="checkbox"] {
+      transform: scale(1.5);
+      margin-top: 20px;
+    }
+  </style>
 </head>
 <body>
   <h1>🐶 Dog Feeding Tracker</h1>
-  <label>
-    <input type="checkbox" id="fedCheckbox" />
-    Dogs have been fed today
-  </label>
-  <div id="status">Loading...</div>
-
-  <script>
-    // 🔧 Replace with your actual Firebase config:
-    const firebaseConfig = {
-        apiKey: "AIzaSyDGV8bO2kgM67p_-9-bpZiiKkkJrbIIs4g",
-        authDomain: "dogs-fed.firebaseapp.com",
-        projectId: "dogs-fed",
-        storageBucket: "dogs-fed.firebasestorage.app",
-        messagingSenderId: "122026065319",
-        appId: "1:122026065319:web:e8bdba2c12c00d9bc50a82",
-        measurementId: "G-GBYZLP47GX"
-        };
-
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-
-    const checkbox = document.getElementById('fedCheckbox');
-    const statusText = document.getElementById('status');
-    const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
-    const ref = db.ref(`dogFedStatus/${today}`);
-
-    // Live updates from Firebase
-    ref.on('value', snapshot => {
-      const fed = snapshot.val() === true;
-      checkbox.checked = fed;
-      statusText.textContent = fed
-        ? "✅ Dogs have already been fed today."
-        : "❌ Dogs have NOT been fed yet today.";
-    });
-
-    // Update Firebase when checkbox is changed
-    checkbox.addEventListener('change', () => {
-      ref.set(checkbox.checked);
-    });
-  </script>
+  <div class="checkbox-label">Fed today?</div>
+  <input type="checkbox" id="fedCheckbox" onchange="toggleFed()" />
 </body>
 </html>
