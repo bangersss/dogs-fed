@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Dog Feed Tally (Last 14 Days)</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 30px;
+      max-width: 400px;
+      margin: auto;
+      text-align: center;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #444;
+      padding: 10px;
+      font-size: 18px;
+    }
+    th {
+      background-color: #eee;
+    }
+  </style>
+</head>
+<body>
+  <h1>Dog Feed Tally (Last 14 Days)</h1>
+  <p>Counting morning and night feeds for B, E, and A...</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Feeder</th>
+        <th>Times Fed</th>
+      </tr>
+    </thead>
+    <tbody id="tallyBody">
+      <tr><td>B</td><td id="countB">0</td></tr>
+      <tr><td>E</td><td id="countE">0</td></tr>
+      <tr><td>A</td><td id="countA">0</td></tr>
+    </tbody>
+  </table>
+
+  <script>
+    // Your Firebase config (same as before)
+    const firebaseConfig = {
+      apiKey: "AIzaSyDGV8bO2kgM67p_-9-bpZiiKkkJrbIIs4g",
+      authDomain: "dogs-fed.firebaseapp.com",
+      databaseURL: "https://dogs-fed-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "dogs-fed",
+      storageBucket: "dogs-fed.firebasestorage.app",
+      messagingSenderId: "122026065319",
+      appId: "1:122026319:web:e8bdba2c12c00d9bc50a82",
+      measurementId: "G-GBYZLP47GX"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // Get today's date
+    const today = new Date();
+
+    // Prepare counters
+    const counts = { B: 0, E: 0, A: 0 };
+
+    // Helper: Format date as YYYY-MM-DD
+    function formatDate(date) {
+      return date.toISOString().split('T')[0];
+    }
+
+    // We'll query 14 days, including today
+    const daysToCheck = 14;
+
+    // Promise to fetch data for a single day and tally it
+    function fetchDayData(dateStr) {
+      return db.ref('dog_feed/' + dateStr).get().then(snapshot => {
+        const dayData = snapshot.val();
+        if (dayData) {
+          ['morning', 'night'].forEach(period => {
+            const feeder = dayData[period];
+            if (feeder && counts.hasOwnProperty(feeder)) {
+              counts[feeder]++;
+            }
+          });
+        }
+      }).catch(err => {
+        console.error("Error fetching data for", dateStr, err);
+      });
+    }
+
+    // Fetch all days, then update the table
+    async function fetchAllData() {
+      for (let i = 0; i < daysToCheck; i++) {
+        const date = new Date(today);
+        date.setDate(today.getDate() - i);
+        const dateStr = formatDate(date);
+        await fetchDayData(dateStr);
+      }
+      document.getElementById('countB').textContent = counts.B;
+      document.getElementById('countE').textContent = counts.E;
+      document.getElementById('countA').textContent = counts.A;
+    }
+
+    fetchAllData();
+  </script>
+</body>
+</html>
