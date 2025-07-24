@@ -96,7 +96,7 @@
     if (hour >= 5 && hour < 12) {
       period = 'morning';
       feedingAllowed = true;
-    } else if (hour >= 16 && hour < 24) {
+    } else if (hour >= 12 && hour < 24) {
       period = 'night';
       feedingAllowed = true;
     }
@@ -115,7 +115,7 @@
           statusEl.textContent = `✅ The dogs have been fed this ${period} by "${fedBy}".`;
           boxesEl.style.display = "none";
         } else {
-          statusEl.textContent = `❌ Have the dogs been fed this ${period}? Tap your initial to confirm.`;
+          statusEl.textContent = `❌ Have the dogs been fed this ${period}?`;
           boxesEl.style.display = "flex";
         }
       });
