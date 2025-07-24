@@ -8,28 +8,42 @@
   <style>
     body {
       font-family: sans-serif;
-      margin: 20px;
+      margin: 10px;
       text-align: center;
-      padding-bottom: 100px; /* room for buttons */
+      padding-bottom: 100px;
     }
+
     table {
       width: 100%;
       border-collapse: collapse;
       margin-top: 20px;
       table-layout: fixed;
     }
+
     th, td {
-      padding: 10px;
-      border: 1px solid #999;
-      font-size: 14px;
+      padding: 6px;
+      border: 1px solid #bbb;
+      font-size: 13px;
       word-wrap: break-word;
+      vertical-align: top;
     }
+
     th {
       background-color: #f0f0f0;
+      font-size: 14px;
     }
-    td.missing {
-      color: #ccc;
+
+    td .date {
+      display: block;
+      font-size: 11px;
+      color: #666;
+      margin-bottom: 4px;
     }
+
+    tr.week-separator td {
+      border-top: 2px solid #444;
+    }
+
     .button-container {
       position: fixed;
       bottom: 20px;
@@ -39,6 +53,7 @@
       gap: 10px;
       z-index: 1000;
     }
+
     button {
       background-color: black;
       color: white;
@@ -48,25 +63,29 @@
       font-size: 16px;
       cursor: pointer;
     }
+
+    .missing {
+      color: #ccc;
+    }
   </style>
 </head>
 <body>
-  <h1>Dog Feed Log (Last 4 Weeks)</h1>
+  <h2>Dog Feed Log (Last 4 Weeks)</h2>
   <table id="calendar">
     <thead>
       <tr>
-        <th>Time</th>
-        <th>Mon</th>
-        <th>Tue</th>
-        <th>Wed</th>
-        <th>Thu</th>
-        <th>Fri</th>
-        <th>Sat</th>
-        <th>Sun</th>
+        <th>X</th>
+        <th>M</th>
+        <th>T</th>
+        <th>W</th>
+        <th>T</th>
+        <th>F</th>
+        <th>S</th>
+        <th>S</th>
       </tr>
     </thead>
     <tbody id="calendarBody">
-      <!-- Rows will be filled in by JS -->
+      <!-- Rows go here -->
     </tbody>
   </table>
 
@@ -95,49 +114,67 @@
     function getMonday(d) {
       d = new Date(d);
       const day = d.getDay(),
-            diff = d.getDate() - day + (day === 0 ? -6 : 1); // adjust when Sunday (0)
+        diff = d.getDate() - day + (day === 0 ? -6 : 1); // adjust when Sunday (0)
       return new Date(d.setDate(diff));
+    }
+
+    function formatDateLabel(date) {
+      const day = date.getDate();
+      const month = date.getMonth() + 1;
+      return `${day}/${month}`;
     }
 
     async function loadCalendar() {
       const today = new Date();
       const weeks = [];
 
-      // Start from current week's Monday
-      let start = getMonday(today);
+      let startMonday = getMonday(today);
 
-      for (let w = 0; w < 4; w++) {
-        const morningRow = document.createElement("tr");
-        const nightRow = document.createElement("tr");
+      for (let w = 3; w >= 0; w--) {
+        const weekStart = new Date(startMonday);
+        weekStart.setDate(weekStart.getDate() - (7 * w));
 
         const weekDates = [];
         for (let i = 0; i < 7; i++) {
-          const d = new Date(start);
-          d.setDate(start.getDate() - w * 7 + i);
-          weekDates.push(new Date(d));
+          const d = new Date(weekStart);
+          d.setDate(weekStart.getDate() + i);
+          weekDates.push(d);
         }
 
-        morningRow.appendChild(document.createElement("td")).textContent = "Morning";
-        nightRow.appendChild(document.createElement("td")).textContent = "Night";
+        // Morning row
+        const morningRow = document.createElement("tr");
+        morningRow.className = "week-separator";
+        morningRow.appendChild(document.createElement("td")).textContent = "M";
 
-        for (let d of weekDates) {
-          const dateStr = d.toISOString().split('T')[0];
+        // Night row
+        const nightRow = document.createElement("tr");
+        nightRow.appendChild(document.createElement("td")).textContent = "N";
+
+        for (const d of weekDates) {
+          const dateStr = d.toISOString().split("T")[0];
+          const dateLabel = formatDateLabel(d);
+
           const morningCell = document.createElement("td");
           const nightCell = document.createElement("td");
 
-          morningCell.textContent = "⏳";
-          nightCell.textContent = "⏳";
+          morningCell.innerHTML = `<span class="date">${dateLabel}</span>⏳`;
+          nightCell.innerHTML = `<span class="date">${dateLabel}</span>⏳`;
 
           morningRow.appendChild(morningCell);
           nightRow.appendChild(nightCell);
 
-          // Fetch from Firebase
           db.ref("dog_feed/" + dateStr).once("value", (snapshot) => {
             const data = snapshot.val();
-            morningCell.textContent = data?.morning || "";
-            nightCell.textContent = data?.night || "";
-            if (!data?.morning) morningCell.classList.add("missing");
-            if (!data?.night) nightCell.classList.add("missing");
+            if (data?.morning) {
+              morningCell.innerHTML = `<span class="date">${dateLabel}</span>${data.morning}`;
+            } else {
+              morningCell.classList.add("missing");
+            }
+            if (data?.night) {
+              nightCell.innerHTML = `<span class="date">${dateLabel}</span>${data.night}`;
+            } else {
+              nightCell.classList.add("missing");
+            }
           });
         }
 
