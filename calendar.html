@@ -67,6 +67,17 @@
     .missing {
       color: #ccc;
     }
+
+    /* Color coding for letters */
+    .cell-E {
+      background-color: #ffcccc; /* Light red for E */
+    }
+    .cell-A {
+      background-color: #ccffcc; /* Light green for A */
+    }
+    .cell-B {
+      background-color: #ccccff; /* Light blue for B */
+    }
   </style>
 </head>
 <body>
@@ -124,6 +135,22 @@
       return `${day}/${month}`;
     }
 
+    function applyColorCoding(cell, value) {
+      // Remove any existing color classes
+      cell.classList.remove("cell-E", "cell-A", "cell-B");
+      
+      if (value) {
+        const firstLetter = value.charAt(0).toUpperCase();
+        if (firstLetter === 'E') {
+          cell.classList.add("cell-E");
+        } else if (firstLetter === 'A') {
+          cell.classList.add("cell-A");
+        } else if (firstLetter === 'B') {
+          cell.classList.add("cell-B");
+        }
+      }
+    }
+
     async function loadCalendar() {
       const today = new Date();
       const weeks = [];
@@ -157,8 +184,8 @@
           const morningCell = document.createElement("td");
           const nightCell = document.createElement("td");
 
-          morningCell.innerHTML = `<span class="date">${dateLabel}</span> `;
-          nightCell.innerHTML = `<span class="date">${dateLabel}</span> `;
+          morningCell.innerHTML = `<span class="date">${dateLabel}</span>\n`;
+          nightCell.innerHTML = `<span class="date">${dateLabel}</span>\n`;
 
           morningRow.appendChild(morningCell);
           nightRow.appendChild(nightCell);
@@ -167,11 +194,13 @@
             const data = snapshot.val();
             if (data?.morning) {
               morningCell.innerHTML = `<span class="date">${dateLabel}</span>${data.morning}`;
+              applyColorCoding(morningCell, data.morning);
             } else {
               morningCell.classList.add("missing");
             }
             if (data?.night) {
               nightCell.innerHTML = `<span class="date">${dateLabel}</span>${data.night}`;
+              applyColorCoding(nightCell, data.night);
             } else {
               nightCell.classList.add("missing");
             }
