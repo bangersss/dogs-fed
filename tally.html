@@ -108,7 +108,7 @@
       return db.ref('dog_feed/' + dateStr).get().then(snapshot => {
         const dayData = snapshot.val();
         if (dayData) {
-          ['morning', 'night'].forEach(period => {
+          ['morning', 'evening'].forEach(period => {
             const feeder = dayData[period];
             if (feeder && counts.hasOwnProperty(feeder)) {
               counts[feeder]++;
