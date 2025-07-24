@@ -112,7 +112,7 @@
       ref.on("value", snapshot => {
         const fedBy = snapshot.val();
         if (fedBy) {
-          statusEl.textContent = `✅ The dogs have been fed this ${period} by "${fedBy}".`;
+          statusEl.textContent = `✅ The dogs have been fed this ${period} by ${fedBy}`;
           boxesEl.style.display = "none";
         } else {
           statusEl.textContent = `❌ Have the dogs been fed this ${period}?`;
