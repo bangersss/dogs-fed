@@ -26,6 +26,7 @@
       font-size: 13px;
       word-wrap: break-word;
       vertical-align: top;
+      position: relative;
     }
 
     th {
@@ -38,6 +39,14 @@
       font-size: 11px;
       color: #666;
       margin-bottom: 4px;
+    }
+
+    td .time-label {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      font-size: 9px;
+      color: #999;
     }
 
     tr.week-separator td {
@@ -168,55 +177,59 @@
           weekDates.push(d);
         }
 
-        // Morning row - includes date label
-        const morningRow = document.createElement("tr");
-        morningRow.className = "week-separator";
-        morningRow.appendChild(document.createElement("td")).textContent = "M";
-
-        // Night row - no date label
-        const nightRow = document.createElement("tr");
-        nightRow.appendChild(document.createElement("td")).textContent = "N";
-
+        // Create combined morning/night row for each day
         for (const d of weekDates) {
           const dateStr = d.toISOString().split("T")[0];
           const dateLabel = formatDateLabel(d);
+          
+          const row = document.createElement("tr");
+          if (w === 3) {
+            row.className = "week-separator";
+          }
+          
+          // Day of week header cell
+          const headerCell = document.createElement("td");
+          headerCell.textContent = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d.getDay()].charAt(0);
+          row.appendChild(headerCell);
 
-          // Morning cell with date label
-          const morningCell = document.createElement("td");
-          morningCell.innerHTML = `<span class="date">${dateLabel}</span>-`;
-
-          // Night cell without date label
-          const nightCell = document.createElement("td");
-          nightCell.textContent = "-";
-
-          morningRow.appendChild(morningCell);
-          nightRow.appendChild(nightCell);
+          // Combined morning/night cell
+          const dayCell = document.createElement("td");
+          dayCell.innerHTML = `
+            <span class="date">${dateLabel}</span>
+            <span class="time-label">morning</span>
+            <span class="morning-data">-</span>
+            <br>
+            <span class="time-label">night</span>
+            <span class="night-data">-</span>
+          `;
+          row.appendChild(dayCell);
 
           db.ref("dog_feed/" + dateStr).once("value", (snapshot) => {
             const data = snapshot.val();
+            const morningData = dayCell.querySelector(".morning-data");
+            const nightData = dayCell.querySelector(".night-data");
             
-            // Morning cell
+            // Morning data
             if (data?.morning) {
-              morningCell.innerHTML = `<span class="date">${dateLabel}</span>${data.morning}`;
-              applyColorCoding(morningCell, data.morning);
+              morningData.textContent = data.morning;
+              applyColorCoding(dayCell, data.morning);
             } else {
-              morningCell.innerHTML = `<span class="date">${dateLabel}</span>-`;
-              morningCell.classList.add("missing");
+              morningData.textContent = "-";
+              morningData.classList.add("missing");
             }
             
-            // Night cell
+            // Night data
             if (data?.night) {
-              nightCell.textContent = data.night;
-              applyColorCoding(nightCell, data.night);
+              nightData.textContent = data.night;
+              applyColorCoding(dayCell, data.night);
             } else {
-              nightCell.textContent = "-";
-              nightCell.classList.add("missing");
+              nightData.textContent = "-";
+              nightData.classList.add("missing");
             }
           });
-        }
 
-        calendarBody.appendChild(morningRow);
-        calendarBody.appendChild(nightRow);
+          calendarBody.appendChild(row);
+        }
       }
     }
 
