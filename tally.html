@@ -14,26 +14,27 @@
       text-align: center;
       position: relative;
     }
-    #navButton {
+    
+    .button-container {
       position: fixed;
       bottom: 20px;
       left: 50%;
       transform: translateX(-50%);
-      padding: 12px 30px;
-      font-size: 16px;
-      cursor: pointer;
-      background-color: #4a90e2;
+      display: flex;
+      gap: 10px;
+      z-index: 1000;
+    }
+
+    button {
+      background-color: black;
       color: white;
       border: none;
       border-radius: 25px;
-      box-shadow: 0 4px 8px rgba(74, 144, 226, 0.4);
-      transition: background-color 0.3s, box-shadow 0.3s;
-      z-index: 1000;
+      padding: 12px 20px;
+      font-size: 16px;
+      cursor: pointer;
     }
-    #navButton:hover {
-      background-color: #357ABD;
-      box-shadow: 0 6px 12px rgba(53, 122, 189, 0.6);
-    }
+
     table {
       width: 100%;
       border-collapse: collapse;
@@ -68,9 +69,8 @@
 
   <div class="button-container">
     <button onclick="location.href='index.html'">Home</button>
-    <button onclick="location.href='tally.html'">Back</button>
+    <button onclick="location.href='calendar.html'">Calendar</button>
   </div>
-
 
   <script>
     // Your Firebase config (same as before)
