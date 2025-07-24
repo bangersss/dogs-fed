@@ -60,11 +60,11 @@
     .current-day-morning {
       position: relative;
     }
-    .current-day-night {
+    .current-day-evening {
       position: relative;
     }
     .current-day-morning::after,
-    .current-day-night::after {
+    .current-day-evening::after {
       content: "";
       position: absolute;
       left: -1px;
@@ -79,13 +79,13 @@
       bottom: 0;
       border-top: 2px solid #000;
     }
-    .current-day-night::after {
+    .current-day-evening::after {
       top: 0;
       bottom: -1px;
       border-bottom: 2px solid #000;
     }
     /* Keep light divider between cells */
-    .current-day-night {
+    .current-day-evening {
       border-top: 1px solid #ddd !important;
     }
     /* Color coding */
@@ -184,8 +184,8 @@
         const morningRow = document.createElement("tr");
         if (w < 3) morningRow.className = "week-separator";
 
-        // Night row
-        const nightRow = document.createElement("tr");
+        // evening row
+        const eveningRow = document.createElement("tr");
 
         for (let i = 0; i < 7; i++) {
           const d = new Date(weekStart);
@@ -203,22 +203,22 @@
             <span class="feed-data">-</span>
           `;
 
-          // Night cell
-          const nightCell = document.createElement("td");
-          if (isToday) nightCell.classList.add("current-day-night");
-          nightCell.innerHTML = `
-            <span class="time-label">night</span>
+          // evening cell
+          const eveningCell = document.createElement("td");
+          if (isToday) eveningCell.classList.add("current-day-evening");
+          eveningCell.innerHTML = `
+            <span class="time-label">evening</span>
             <span class="feed-data">-</span>
           `;
 
           morningRow.appendChild(morningCell);
-          nightRow.appendChild(nightCell);
+          eveningRow.appendChild(eveningCell);
 
           // Load data
           db.ref("dog_feed/" + dateStr).once("value", (snapshot) => {
             const data = snapshot.val();
             const morningData = morningCell.querySelector(".feed-data");
-            const nightData = nightCell.querySelector(".feed-data");
+            const eveningData = eveningCell.querySelector(".feed-data");
 
             if (data?.morning) {
               morningData.textContent = data.morning;
@@ -228,18 +228,18 @@
               morningData.classList.add("missing");
             }
 
-            if (data?.night) {
-              nightData.textContent = data.night;
-              applyColorCoding(nightCell, data.night);
+            if (data?.evening) {
+              eveningData.textContent = data.evening;
+              applyColorCoding(eveningCell, data.evening);
             } else {
-              nightData.textContent = "-";
-              nightData.classList.add("missing");
+              eveningData.textContent = "-";
+              eveningData.classList.add("missing");
             }
           });
         }
 
         calendarBody.appendChild(morningRow);
-        calendarBody.appendChild(nightRow);
+        calendarBody.appendChild(eveningRow);
       }
     }
 
