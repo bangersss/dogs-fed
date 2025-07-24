@@ -10,46 +10,70 @@
       font-family: sans-serif;
       margin: 20px;
       text-align: center;
+      padding-bottom: 100px; /* room for buttons */
     }
     table {
       width: 100%;
       border-collapse: collapse;
       margin-top: 20px;
+      table-layout: fixed;
     }
     th, td {
       padding: 10px;
       border: 1px solid #999;
+      font-size: 14px;
+      word-wrap: break-word;
     }
     th {
       background-color: #f0f0f0;
     }
-    td {
-      font-weight: bold;
+    td.missing {
+      color: #ccc;
+    }
+    .button-container {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 10px;
+      z-index: 1000;
+    }
+    button {
+      background-color: black;
+      color: white;
+      border: none;
+      border-radius: 25px;
+      padding: 12px 20px;
+      font-size: 16px;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
-  <h1>Last 4 Weeks Feed Log</h1>
+  <h1>Dog Feed Log (Last 4 Weeks)</h1>
   <table id="calendar">
-    <tr>
-      <th>Date</th>
-      <th>Morning</th>
-      <th>Night</th>
-    </tr>
+    <thead>
+      <tr>
+        <th>Time</th>
+        <th>Mon</th>
+        <th>Tue</th>
+        <th>Wed</th>
+        <th>Thu</th>
+        <th>Fri</th>
+        <th>Sat</th>
+        <th>Sun</th>
+      </tr>
+    </thead>
+    <tbody id="calendarBody">
+      <!-- Rows will be filled in by JS -->
+    </tbody>
   </table>
 
-  <button
-    style="background-color: black; color: white; border: none; border-radius: 25px; padding: 12px 20px; font-size: 16px; cursor: pointer;"
-    onclick="location.href='index.html'"
-  >
-    Home
-  </button>
-  <button
-    style="background-color: black; color: white; border: none; border-radius: 25px; padding: 12px 20px; font-size: 16px; cursor: pointer;"
-    onclick="location.href='tally.html'"
-  >
-    Back
-  </button>
+  <div class="button-container">
+    <button onclick="location.href='index.html'">Home</button>
+    <button onclick="location.href='tally.html'">Back</button>
+  </div>
 
   <script>
     const firebaseConfig = {
@@ -66,37 +90,63 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    const table = document.getElementById("calendar");
+    const calendarBody = document.getElementById("calendarBody");
 
-    const today = new Date();
-
-    // Get past 28 days (4 weeks)
-    for (let i = 0; i < 28; i++) {
-      const date = new Date();
-      date.setDate(today.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
-
-      const row = document.createElement("tr");
-      const dateCell = document.createElement("td");
-      const morningCell = document.createElement("td");
-      const nightCell = document.createElement("td");
-
-      dateCell.textContent = dateStr;
-      morningCell.textContent = "⏳";
-      nightCell.textContent = "⏳";
-
-      row.appendChild(dateCell);
-      row.appendChild(morningCell);
-      row.appendChild(nightCell);
-      table.appendChild(row);
-
-      // Fetch data from Firebase
-      db.ref("dog_feed/" + dateStr).once("value", (snapshot) => {
-        const data = snapshot.val();
-        morningCell.textContent = data?.morning || "";
-        nightCell.textContent = data?.night || "";
-      });
+    function getMonday(d) {
+      d = new Date(d);
+      const day = d.getDay(),
+            diff = d.getDate() - day + (day === 0 ? -6 : 1); // adjust when Sunday (0)
+      return new Date(d.setDate(diff));
     }
+
+    async function loadCalendar() {
+      const today = new Date();
+      const weeks = [];
+
+      // Start from current week's Monday
+      let start = getMonday(today);
+
+      for (let w = 0; w < 4; w++) {
+        const morningRow = document.createElement("tr");
+        const nightRow = document.createElement("tr");
+
+        const weekDates = [];
+        for (let i = 0; i < 7; i++) {
+          const d = new Date(start);
+          d.setDate(start.getDate() - w * 7 + i);
+          weekDates.push(new Date(d));
+        }
+
+        morningRow.appendChild(document.createElement("td")).textContent = "Morning";
+        nightRow.appendChild(document.createElement("td")).textContent = "Night";
+
+        for (let d of weekDates) {
+          const dateStr = d.toISOString().split('T')[0];
+          const morningCell = document.createElement("td");
+          const nightCell = document.createElement("td");
+
+          morningCell.textContent = "⏳";
+          nightCell.textContent = "⏳";
+
+          morningRow.appendChild(morningCell);
+          nightRow.appendChild(nightCell);
+
+          // Fetch from Firebase
+          db.ref("dog_feed/" + dateStr).once("value", (snapshot) => {
+            const data = snapshot.val();
+            morningCell.textContent = data?.morning || "";
+            nightCell.textContent = data?.night || "";
+            if (!data?.morning) morningCell.classList.add("missing");
+            if (!data?.night) nightCell.classList.add("missing");
+          });
+        }
+
+        calendarBody.appendChild(morningRow);
+        calendarBody.appendChild(nightRow);
+      }
+    }
+
+    loadCalendar();
   </script>
 </body>
 </html>
