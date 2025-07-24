@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Calendar</title>
+  <title>Dog Feed Calendar</title>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,51 +12,87 @@
       text-align: center;
       padding-bottom: 100px;
     }
-
     table {
       width: 100%;
       border-collapse: collapse;
       margin-top: 20px;
       table-layout: fixed;
     }
-
     th, td {
-      padding: 6px;
-      border: 1px solid #bbb;
-      font-size: 13px;
-      word-wrap: break-word;
+      padding: 8px;
+      border: 1px solid #ddd;
+      font-size: 14px;
       vertical-align: top;
+      height: 40px;
       position: relative;
     }
-
     th {
       background-color: #f0f0f0;
-      font-size: 14px;
+      font-weight: bold;
     }
-
-    td .date {
-      display: block;
+    .date {
       font-size: 11px;
       color: #666;
-      margin-bottom: 4px;
-    }
-
-    td .time-label {
       position: absolute;
-      top: 2px;
-      left: 2px;
+      top: 4px;
+      right: 4px;
+    }
+    .time-label {
       font-size: 9px;
       color: #999;
+      position: absolute;
+      top: 4px;
+      left: 4px;
     }
-
-    td .feed-data {
-      padding-top: 12px;
+    .feed-data {
+      display: block;
+      margin-top: 20px;
+      text-align: center;
     }
-
-    tr.week-separator td {
-      border-top: 2px solid #444;
+    /* Light grey week separator */
+    .week-separator {
+      border-top: 3px solid #d3d3d3 !important;
     }
-
+    .missing {
+      color: #ccc;
+    }
+    /* CURRENT DAY STYLING - FINAL WORKING VERSION */
+    .current-day-morning {
+      position: relative;
+    }
+    .current-day-night {
+      position: relative;
+    }
+    .current-day-morning::after,
+    .current-day-night::after {
+      content: "";
+      position: absolute;
+      left: -1px;
+      right: -1px;
+      border-left: 2px solid #000;
+      border-right: 2px solid #000;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .current-day-morning::after {
+      top: -1px;
+      bottom: 0;
+      border-top: 2px solid #000;
+    }
+    .current-day-night::after {
+      top: 0;
+      bottom: -1px;
+      border-bottom: 2px solid #000;
+    }
+    /* Keep light divider between cells */
+    .current-day-night {
+      border-top: 1px solid #ddd !important;
+    }
+    /* Color coding */
+    .cell-E { background-color: #ffcccc; }
+    .cell-A { background-color: #ccffcc; }
+    .cell-B { background-color: #ccccff; }
+    /* Buttons */
     .button-container {
       position: fixed;
       bottom: 20px;
@@ -64,9 +100,7 @@
       transform: translateX(-50%);
       display: flex;
       gap: 10px;
-      z-index: 1000;
     }
-
     button {
       background-color: black;
       color: white;
@@ -75,21 +109,6 @@
       padding: 12px 20px;
       font-size: 16px;
       cursor: pointer;
-    }
-
-    .missing {
-      color: #ccc;
-    }
-
-    /* Color coding for letters */
-    .cell-E {
-      background-color: #ffcccc; /* Light red for E */
-    }
-    .cell-A {
-      background-color: #ccffcc; /* Light green for A */
-    }
-    .cell-B {
-      background-color: #ccccff; /* Light blue for B */
     }
   </style>
 </head>
@@ -107,9 +126,7 @@
         <th>S</th>
       </tr>
     </thead>
-    <tbody id="calendarBody">
-      <!-- Rows go here -->
-    </tbody>
+    <tbody id="calendarBody"></tbody>
   </table>
 
   <div class="button-container">
@@ -131,78 +148,64 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-
     const calendarBody = document.getElementById("calendarBody");
+    const today = new Date();
+    const todayDateStr = today.toISOString().split('T')[0];
 
     function getMonday(d) {
       d = new Date(d);
-      const day = d.getDay(),
-        diff = d.getDate() - day + (day === 0 ? -6 : 1); // adjust when Sunday (0)
+      const day = d.getDay();
+      const diff = d.getDate() - day + (day === 0 ? -6 : 1);
       return new Date(d.setDate(diff));
     }
 
-    function formatDateLabel(date) {
-      const day = date.getDate();
-      const month = date.getMonth() + 1;
-      return `${day}/${month}`;
+    function formatDate(date) {
+      return `${date.getDate()}/${date.getMonth() + 1}`;
     }
 
     function applyColorCoding(cell, value) {
-      // Remove any existing color classes
       cell.classList.remove("cell-E", "cell-A", "cell-B");
-      
       if (value) {
         const firstLetter = value.charAt(0).toUpperCase();
-        if (firstLetter === 'E') {
-          cell.classList.add("cell-E");
-        } else if (firstLetter === 'A') {
-          cell.classList.add("cell-A");
-        } else if (firstLetter === 'B') {
-          cell.classList.add("cell-B");
-        }
+        if (firstLetter === 'E') cell.classList.add("cell-E");
+        else if (firstLetter === 'A') cell.classList.add("cell-A");
+        else if (firstLetter === 'B') cell.classList.add("cell-B");
       }
     }
 
     async function loadCalendar() {
-      const today = new Date();
-      const weeks = [];
-
-      let startMonday = getMonday(today);
+      const startMonday = getMonday(today);
 
       for (let w = 3; w >= 0; w--) {
         const weekStart = new Date(startMonday);
         weekStart.setDate(weekStart.getDate() - (7 * w));
 
-        const weekDates = [];
-        for (let i = 0; i < 7; i++) {
-          const d = new Date(weekStart);
-          d.setDate(weekStart.getDate() + i);
-          weekDates.push(d);
-        }
-
-        // Morning row - includes date label
+        // Morning row (with dates)
         const morningRow = document.createElement("tr");
-        if (w === 3) {
-          morningRow.className = "week-separator";
-        }
+        if (w < 3) morningRow.className = "week-separator";
 
         // Night row
         const nightRow = document.createElement("tr");
 
-        for (const d of weekDates) {
+        for (let i = 0; i < 7; i++) {
+          const d = new Date(weekStart);
+          d.setDate(weekStart.getDate() + i);
           const dateStr = d.toISOString().split("T")[0];
-          const dateLabel = formatDateLabel(d);
+          const dateLabel = formatDate(d);
+          const isToday = dateStr === todayDateStr;
 
-          // Morning cell with date label
+          // Morning cell
           const morningCell = document.createElement("td");
+          if (isToday) morningCell.classList.add("current-day-morning");
           morningCell.innerHTML = `
             <span class="date">${dateLabel}</span>
             <span class="time-label">morning</span>
             <span class="feed-data">-</span>
           `;
 
-          // Night cell without date label
+          // Night cell
           const nightCell = document.createElement("td");
+          if (isToday) nightCell.classList.add("current-day-night");
           nightCell.innerHTML = `
             <span class="time-label">night</span>
             <span class="feed-data">-</span>
@@ -211,12 +214,12 @@
           morningRow.appendChild(morningCell);
           nightRow.appendChild(nightCell);
 
+          // Load data
           db.ref("dog_feed/" + dateStr).once("value", (snapshot) => {
             const data = snapshot.val();
             const morningData = morningCell.querySelector(".feed-data");
             const nightData = nightCell.querySelector(".feed-data");
-            
-            // Morning data
+
             if (data?.morning) {
               morningData.textContent = data.morning;
               applyColorCoding(morningCell, data.morning);
@@ -224,8 +227,7 @@
               morningData.textContent = "-";
               morningData.classList.add("missing");
             }
-            
-            // Night data
+
             if (data?.night) {
               nightData.textContent = data.night;
               applyColorCoding(nightCell, data.night);
