@@ -1,42 +1,37 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Have the dogs been fed?</title>
+
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <style>
     body {
       font-family: sans-serif;
       text-align: center;
-      margin: 50px 20px 80px; /* add bottom margin for button */
+      margin: 50px 20px 80px;
     }
-    #navButton {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      padding: 12px 30px;
-      font-size: 16px;
-      cursor: pointer;
-      background-color: #4a90e2;
-      color: white;
-      border: none;
-      border-radius: 25px;
-      box-shadow: 0 4px 8px rgba(74, 144, 226, 0.4);
-      transition: background-color 0.3s, box-shadow 0.3s;
-      z-index: 1000;
+
+    h1 {
+      margin-bottom: 10px;
     }
-    #navButton:hover {
-      background-color: #357ABD;
-      box-shadow: 0 6px 12px rgba(53, 122, 189, 0.6);
+
+    #status {
+      font-size: 18px;
+      margin-top: 10px;
     }
+
     #boxes {
       display: flex;
       justify-content: center;
       gap: 20px;
       margin-top: 30px;
     }
+
     .box {
       width: 60px;
       height: 60px;
@@ -48,12 +43,36 @@
       border-radius: 8px;
       transition: background-color 0.3s;
     }
+
     .box:hover {
       background-color: #ddd;
+    }
+
+    #navButton {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 12px 30px;
+      font-size: 16px;
+      cursor: pointer;
+      background-color: #000;
+      color: white;
+      border: none;
+      border-radius: 25px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+      transition: background-color 0.3s, box-shadow 0.3s;
+      z-index: 1000;
+    }
+
+    #navButton:hover {
+      background-color: #333;
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.6);
     }
   </style>
 </head>
 <body>
+
   <h1>Have the dogs been fed?</h1>
   <p id="status">Checking status...</p>
 
@@ -63,21 +82,16 @@
     <div class="box" id="boxA">A</div>
   </div>
 
-  <button
-    id="navButton"
-    style="background-color: black; color: white; border: none; border-radius: 25px; padding: 12px 30px; font-size: 16px; cursor: pointer;"
-    onclick="location.href='tally.html'"
-  >
-    Score
-  </button>
-  
+  <button id="navButton" onclick="location.href='tally.html'">Score</button>
+
   <script>
+    // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyDGV8bO2kgM67p_-9-bpZiiKkkJrbIIs4g",
       authDomain: "dogs-fed.firebaseapp.com",
       databaseURL: "https://dogs-fed-default-rtdb.asia-southeast1.firebasedatabase.app",
       projectId: "dogs-fed",
-      storageBucket: "dogs-fed.firebasestorage.app",
+      storageBucket: "dogs-fed.appspot.com",
       messagingSenderId: "122026065319",
       appId: "1:122026319:web:e8bdba2c12c00d9bc50a82",
       measurementId: "G-GBYZLP47GX"
@@ -86,9 +100,21 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    const now = new Date();
-    const hour = now.getHours();
-    const today = now.toISOString().split('T')[0];
+    // Use Melbourne time for date and hour
+    const hour = parseInt(
+      new Date().toLocaleString('en-AU', {
+        hour: 'numeric',
+        hour12: false,
+        timeZone: 'Australia/Melbourne'
+      }),
+      10
+    );
+
+    const today = new Date().toLocaleDateString('en-CA', {
+      timeZone: 'Australia/Melbourne'
+    });
+
+    console.log(`Melbourne Hour: ${hour}, Date: ${today}`);
 
     let period = null;
     let feedingAllowed = false;
@@ -105,7 +131,7 @@
     const boxesEl = document.getElementById("boxes");
 
     if (!feedingAllowed) {
-      statusEl.textContent = "⏰ It's too early to feed the dogs...";
+      statusEl.textContent = "⏰ It's not feeding time right now.";
       boxesEl.style.display = "none";
     } else {
       const ref = db.ref(`dog_feed/${today}/${period}`);
@@ -126,7 +152,15 @@
             alert("Feeding is not allowed at this time.");
             return;
           }
-          db.ref(`dog_feed/${today}/${period}`).set(initial);
+          db.ref(`dog_feed/${today}/${period}`)
+            .set(initial)
+            .then(() => {
+              console.log(`${initial} marked as feeder for ${period} on ${today}`);
+            })
+            .catch(error => {
+              console.error("Error saving feed:", error);
+              alert("Error saving feed. Check your internet connection.");
+            });
         };
       });
     }
